@@ -1,122 +1,57 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
 import './App.css';
 
+const schema = yup.object({
+  email: yup.string().required("Электронная почта обязательна к заполнению.").email("Неверный формат электронной почты."),
+  password: yup.string().required("Пароль обязателен к заполнению.").min(6, "Пароль должен содержать от 6 до 15 символов.").max(15, "Пароль должен содержать от 6 до 15 символов."),
+  confirmPassword: yup.string().oneOf([yup.ref('password'), null], "Пароли не совпадают.").required("Подтверждение пароля обязательно.")
+}).required();
+
 function App() {
-  const [user, setUser] = useState({
-    email: '',
-    password: '',
-    confirmPassword: ''
+  const { register, handleSubmit, formState: { errors, isValid } } = useForm({
+    resolver: yupResolver(schema),
+    mode: "onChange" 
   });
-  const [errors, setErrors] = useState({});
-  const [isFormValid, setIsFormValid] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const submitButtonRef = useRef(null);
 
-  const validate = useCallback(() => {
-    let isValid = true;
-    const newErrors = {};
-
-    if (!user.email) {
-      newErrors.email = "Электронная почта обязательна к заполнению.";
-      isValid = false;
-    } else if (!/\S+@\S+\.\S+/.test(user.email)) {
-      newErrors.email = "Неверный формат электронной почты.";
-      isValid = false;
-    }
-
-    if (!user.password) {
-      newErrors.password = "Пароль обязателен к заполнению.";
-      isValid = false;
-    } else if (user.password.length < 6 || user.password.length > 15) {
-      newErrors.password = "Пароль должен содержать от 6 до 15 символов.";
-      isValid = false;
-    }
-
-    if (user.password !== user.confirmPassword) {
-      newErrors.confirmPassword = "Пароли не совпадают.";
-      isValid = false;
-    }
-
-    setErrors(newErrors);
-    setIsFormValid(isValid);
-  }, [user.email, user.password, user.confirmPassword]);
-
-  useEffect(() => {
-    validate();
-  }, [validate]);
-
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setUser(prevUser => ({
-      ...prevUser,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    if (!isFormValid) {
-      return;
-    }
-    console.log("Регистрационные данные:", user);
+  const onSubmit = data => {
+    console.log(data);
     alert("Регистрация успешно завершена!");
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
+  const [showPassword, setShowPassword] = useState(false);
+  const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   return (
     <div className="App">
       <header className="App-header">
         <h2>Форма регистрации</h2>
-        <form onSubmit={handleSubmit} noValidate>
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <div>
             <label>
               Электронная почта:
-              <input
-                type="email"
-                name="email"
-                value={user.email}
-                onChange={handleChange}
-                required
-              />
-              {errors.email && <p className="error">{errors.email}</p>}
+              <input type="email" {...register("email")} />
+              {errors.email && <p className="error">{errors.email.message}</p>}
             </label>
           </div>
-          <div className="password-input">
+          <div>
             <label>
               Пароль:
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                value={user.password}
-                onChange={handleChange}
-                required
-              />
-              <button type="button" onClick={togglePasswordVisibility} className="toggle-password">
-                {showPassword ? "Скрыть" : "Показать"}
-              </button>
+              <input type={showPassword ? "text" : "password"} {...register("password")} />
+              <button type="button" onClick={togglePasswordVisibility}>{showPassword ? "Скрыть" : "Показать"}</button>
+              {errors.password && <p className="error">{errors.password.message}</p>}
             </label>
-            {errors.password && <p className="error">{errors.password}</p>}
           </div>
-          <div className="password-input">
+          <div>
             <label>
               Повтор пароля:
-              <input
-                type={showPassword ? "text" : "password"}
-                name="confirmPassword"
-                value={user.confirmPassword}
-                onChange={handleChange}
-                required
-              />
-              <button type="button" onClick={togglePasswordVisibility} className="toggle-password">
-                {showPassword ? "Скрыть" : "Показать"}
-              </button>
+              <input type="password" {...register("confirmPassword")} />
+              {errors.confirmPassword && <p className="error">{errors.confirmPassword.message}</p>}
             </label>
-            {errors.confirmPassword && <p className="error">{errors.confirmPassword}</p>}
           </div>
-          <button type="submit" disabled={!isFormValid} ref={submitButtonRef}>Зарегистрироваться</button>
+          <button type="submit" disabled={!isValid}>Зарегистрироваться</button>
         </form>
       </header>
     </div>
@@ -124,6 +59,8 @@ function App() {
 }
 
 export default App;
+
+
 
 
 
